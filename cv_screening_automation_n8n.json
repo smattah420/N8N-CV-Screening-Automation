@@ -1,0 +1,99 @@
+{
+  "name": "CV Screening Automation - Starter",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## CV Screening Automation\n1. Send a CV file to the Webhook as multipart/form-data using the field name `data`.\n2. The workflow extracts text from the uploaded file.\n3. Edit the job criteria in the Code node before using it.\n4. The Code node returns a transparent keyword-match score and a preliminary category.\n\nStarter workflow: no AI API key required. It screens text only and does not make a hiring decision.",
+        "height": 260,
+        "width": 440
+      },
+      "id": "e4b96f8c-3f2e-4b67-87a7-21d8bdbb0c01",
+      "name": "Read Me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -700,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cv-screening",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "6e4b8d3c-1b8e-4b30-9f08-38d5d4b4a102",
+      "name": "Upload CV (Webhook)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -460,
+        80
+      ],
+      "webhookId": "cv-screening-webhook-starter"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "id": "8d2b5d2f-7b51-4d19-96b9-91fdfb7ac203",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const cvText = String($json.text ?? $json.extractedText ?? '');\n\n// EDIT THESE CRITERIA FOR YOUR JOB ROLE.\nconst job = {\n  title: 'Full Stack Developer',\n  requiredSkills: ['javascript', 'react', 'node.js', 'express', 'api', 'mongodb', 'git'],\n  preferredSkills: ['python', 'django', 'postgresql', 'docker', 'testing'],\n  minimumRequiredMatches: 4\n};\n\nconst normalized = cvText.toLowerCase();\nconst findMatches = (skills) => skills.filter(skill => normalized.includes(skill.toLowerCase()));\nconst requiredMatches = findMatches(job.requiredSkills);\nconst preferredMatches = findMatches(job.preferredSkills);\nconst missingRequiredSkills = job.requiredSkills.filter(skill => !requiredMatches.includes(skill));\nconst score = Math.round(((requiredMatches.length / Math.max(job.requiredSkills.length, 1)) * 80) + ((preferredMatches.length / Math.max(job.preferredSkills.length, 1)) * 20));\nlet preliminaryCategory = 'Needs manual review';\nif (requiredMatches.length >= job.minimumRequiredMatches) preliminaryCategory = 'Potential match - review CV';\nelse preliminaryCategory = 'Insufficient keyword evidence - manual review';\n\nreturn {\n  json: {\n    jobTitle: job.title,\n    screeningMethod: 'Keyword matching only; not an employment decision',\n    scoreOutOf100: score,\n    preliminaryCategory,\n    matchedRequiredSkills: requiredMatches,\n    matchedPreferredSkills: preferredMatches,\n    missingRequiredSkills,\n    extractedTextPreview: cvText.slice(0, 1200),\n    note: 'Verify skills and experience manually. Keyword absence does not prove a candidate lacks a skill.'\n  }\n};"
+      },
+      "id": "2f1f7b90-6b4d-44b2-89de-6d0e9d0ec304",
+      "name": "Screen CV Against Job Criteria",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        80
+      ]
+    }
+  ],
+  "connections": {
+    "Upload CV (Webhook)": {
+      "main": [
+        [
+          {
+            "node": "Extract PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract PDF Text": {
+      "main": [
+        [
+          {
+            "node": "Screen CV Against Job Criteria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "d74b3e2a-24bd-4c5e-9f17-20c1d2f7a305",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}
