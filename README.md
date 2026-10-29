@@ -136,7 +136,4 @@ Software Engineering Undergraduate | Full-Stack Developer | Python Developer
 
 - GitHub: [@smattah420](https://github.com/smattah420)
 
-## 📜 License
-
-This project is available for learning and personal portfolio use. Add a formal open-source license if you intend to specify permissions for reuse and distribution.
 
